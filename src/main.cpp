@@ -9,8 +9,6 @@ typedef glm::vec3 vec3;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
-void triangle(const vec2& a, const vec2& b, const vec2& c);
-void divide_triangle(const vec2& a, const vec2& b, const vec2& c, int count);
 void display();
 void init();
 
@@ -19,11 +17,8 @@ const unsigned int SCR_WIDTH = 512;
 const unsigned int SCR_HEIGHT = 512;
 
 //data variables
-const unsigned int NUM_TRIANGLES = 243; // 3^10 triangles generated
-const unsigned int NUM_TIMES_TO_SUBDIVIDE = 5;
-const unsigned int NUM_VERTICES = 3 * NUM_TRIANGLES;
-int index = 0;
-vec2 points[NUM_VERTICES];
+const unsigned int NUM_POINTS = 5000;
+vec3 points[NUM_POINTS];
 
 //OpenGL data
 unsigned int VBO, VAO;
@@ -92,16 +87,30 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 void display()
 {
     glClear(GL_COLOR_BUFFER_BIT);
-    glDrawArrays(GL_LINE_LOOP, 0, NUM_VERTICES);
+    glDrawArrays(GL_POINTS, 0, NUM_POINTS);
     glFlush();
 }
 
 void init()
 {
     //specify the vertices of the tetrahedron
-    glm::vec2 vertices[3] = { vec2(-1.0,-1.0), vec2(0.0,1.0), vec2(1.0,-1.0)};
+    vec3 vertices[4] = {
+        vec3(-1.0,-1.0,-1.0),
+        vec3(1.0,-1.0,-1.0),
+        vec3(0.0,1.0,-1.0),
+        vec3(0.0,0.0,1.0)
+    };
 
-    divide_triangle(vertices[0], vertices[1], vertices[2], NUM_TIMES_TO_SUBDIVIDE);
+    vec3 random_point_inside_tetrahedron = vec3(0.0, 0.0, 0.0);
+
+    points[0] = random_point_inside_tetrahedron;
+    for (int i = 1; i < NUM_POINTS; ++i) {
+        //generates a random number between 0 and 4
+        int j = rand() % 4;
+        //computes the halfwaty between the selected vertex and the previous point
+        points[i] = (points[i - 1] + vertices[j]) / 2.0f;
+    }
+
 
     //Load shaders and use it.
     Shader ourShader(RESOURCES_PATH "vertex.vc", RESOURCES_PATH "fragment.fc");
@@ -116,39 +125,11 @@ void init()
     glBufferData(GL_ARRAY_BUFFER, sizeof(points), points, GL_STATIC_DRAW);
 
     // position attribute
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
     glEnableVertexAttribArray(0);
 
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 }
 
-void triangle(const vec2& a, const vec2& b, const vec2& c) {
-    points[index] = a;
-    index++;
-    points[index] = b;
-    index++;
-    points[index] = c;
-    index++;
-}
-
-void divide_triangle(const vec2& a, const vec2& b, const vec2& c, int count) {
-
-    if (count > 0)
-    {
-        vec2 ab = glm::mix(a, b, .7f);
-        vec2 ac = glm::mix(a, c, .2f);
-        vec2 bc = (b + c) / 2.f;
-
-        //subdivide all but inner triangle
-
-        divide_triangle(a, ab, ac, count - 1);
-        divide_triangle(c, ac, bc, count - 1);
-        divide_triangle(b, bc, ab, count - 1);
-
-    }
-    else {
-        triangle(a, b, c);
-    }
 
 
-}

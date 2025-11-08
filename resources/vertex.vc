@@ -1,9 +1,10 @@
 #version 330 core
 layout (location = 0) in vec4 vPos;
+out vec4 color;
 
-out vec3 ourColor;
 
 void main()
 {
+    color = vec4((1.0 + vPos.xyz)/2.0, 1.0);
     gl_Position = vPos;
 }
